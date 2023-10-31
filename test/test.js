@@ -3,12 +3,12 @@ const fs = require('fs')
 
 // Example Zip
 
-// const exampleName = 'test4'
-// const example = fs.readFileSync(`./examples/unzipped/${ exampleName }.min.json`, 'utf-8')
-const zipped = zip('ciao 123 come va iop sono un ragazzo molto brvo ciao , cdavvero ciao davvero! dico amico!')
-const unzipped = unzip(zipped.raw, '', true)
-console.log(zipped.raw)
-console.log(unzipped)
+const exampleName = 'test3'
+const example = fs.readFileSync(`./examples/unzipped/${ exampleName }.min.json`, 'utf-8')
+const zipped = zip(example)
+// const unzipped = unzip(zipped.raw, '', true)
+console.log(zipped.s)
+// console.log(unzipped)
 // fs.writeFileSync(`./examples/zipped/${ exampleName }.cz`, zipped.raw)
 
 
