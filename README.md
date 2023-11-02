@@ -1,5 +1,5 @@
 # camillo-zip
-WIP, for now if testing the zipping sucks (zipped file heavier than original one) try playing with start parameter zip(start=5)
+WIP, for now if testing the zipping sucks (zipped file heavier than original one) try playing with start parameter `zip(start=5)`
 
 ## TODO Fixes:
 - [x] sanitize string before getting parsed (doing the needed escape logic ("\,", "\NUM")) and in case of keying that, all keys can be unsanitized except for "\,".

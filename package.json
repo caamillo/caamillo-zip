@@ -1,12 +1,12 @@
 {
   "name": "caamillozip",
   "version": "1.0.0",
-  "description": "",
+  "description": "Useless serialized-multidimensional-memory compressor",
   "main": "main.js",
   "type": "commonjs",
   "scripts": {
   },
   "keywords": [],
-  "author": "",
+  "author": "Matteo Camillo Ludovico",
   "license": "ISC"
 }
