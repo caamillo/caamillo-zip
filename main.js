@@ -110,7 +110,6 @@ const zip = (s, start=3, end=0) => {
                 const savesArr = chunkerized[chunk][saves]
                 const weights = savesArr.reduce((a, { pattern }) => a + pattern.length, 0)
                 let unweight = savesArr[0].pattern.length + 1 // idx (climber API) + word length + "," or "\n" used in map
-                // console.log(chunk, saves, savesArr, added, s.split(/(?<!\\)(?<!\\\\)\n/))
                 let temp = s.split(/(?<!\\)(?<!\\\\)\n/).map((row, nrow) => {
                     const idx = nrow !== chunk ? `\\${ chunk }:${ saves }\\` : '' + saves
                     unweight += idx.length
@@ -122,7 +121,6 @@ const zip = (s, start=3, end=0) => {
                         return idx
                     })
                 }).join('\n')
-                // console.log('pattern:', savesArr[0].pattern, 'w:', weights, 'uw:', unweight)
                 if (weights > unweight) {
                     s = temp
                     expectedDiff += weights - unweight
