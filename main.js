@@ -86,6 +86,7 @@ const zip = (s, start=3, end=0) => {
         }
         let found = resetFound()
         const saved = []
+        process.stdout.write("Mapping all occurrences... ")
         while (idx < s.length) {
             const char = s[idx]
             if (!found.value) {
@@ -115,6 +116,7 @@ const zip = (s, start=3, end=0) => {
             idx += 1
             // TODO: create a while to be recursive and also watch of occurs but in reverse mode (1: ciao come stai, 2: ciao come sta, ...) -1 every time
         }
+        process.stdout.write("Ok!\nSorting by weight... ")
         // First Step
         const sortedByWeight = saved.sort((a, b) => b.weight - a.weight)
         // console.log(sortedByWeight)
@@ -126,6 +128,7 @@ const zip = (s, start=3, end=0) => {
                 tempString = tempString.replaceAll(save.pattern, m.length - 1)
             }
         }
+        process.stdout.write("Ok!\nWriting map... ")
         // Second Step
         m = m.sort((a, b) => Math.min(...a.map(el => el.start)) - Math.min(...b.map(el => el.start))).map(el => el.sort((a, b) => a.start - b.start))
         let sortedByOrder = m.map(map => map.map((save) => {
@@ -142,26 +145,44 @@ const zip = (s, start=3, end=0) => {
             }
             return saved
         })).flat()
-        // console.log(sortedByOrder)
         const chunkerized = chunkerize(sortedByOrder)
+        // weights = ALL chunkerized[chunk][saves] WEIGHTS
+        let expectedDiff = 0
+        let added = 0
         for (let chunk in chunkerized) {
             chunk = parseInt(chunk)
             for (let saves in chunkerized[chunk]) {
                 saves = parseInt(saves)
-                s = s.split('\n').map((row, nrow) => {
+                const savesArr = chunkerized[chunk][saves]
+                const weights = savesArr.reduce((a, { pattern }) => a + pattern.length, 0)
+                let unweight = savesArr[0].pattern.length + 1 // idx (climber API) + word length + "," or "\n" used in map
+                let temp = s.split(/(?<!\\)(?<!\\\\)\n/).map((row, nrow) => {
                     const idx = `${ nrow !== chunk ? `${ chunk }:` : '' }${ saves }`
-                    return row.replaceAll(chunkerized[chunk][saves][0].pattern, () => {
-                        if (saves !== 9) return idx
+                    unweight += idx.length
+                    return row.replaceAll(savesArr[0].pattern, () => {
+                        if (added < 10) return idx
                         return `${ idx }\n`
                     })
                 }).join('\n')
+                // console.log('pattern:', savesArr[0].pattern, 'w:', weights, 'uw:', unweight)
+                if (weights > unweight) {
+                    s = temp
+                    expectedDiff += weights - unweight
+                    added += 1
+                } else {
+                    m = m.map(saves => saves.filter(({ pattern }) => pattern != savesArr[0].pattern))
+                    m = m.filter(saves => saves.length > 0)
+                }
                 if (saves === 9) {
-                    let temp = s.split('\n')
-                    temp[temp.length - 1] = temp[temp.length - 1].replaceAll(/(?<!\\)[0-9]/g, el => `${ chunk }:${ el }`)
-                    s = temp.join('\n')
+                    let temp = s.split(/(?<!\\)(?<!\\\\)\n/)
+                    if (temp.length > 1) {
+                        temp[temp.length - 1] = temp[temp.length - 1].replaceAll(/(?<!\\)[0-9]/g, el => `${ chunk }:${ el }`)
+                        s = temp.join('\n')
+                    }
                 }
             }
         }
+        process.stdout.write(`Ok!\nDone! Expected diff: ~ ${ expectedDiff }\n`)
         m = m.map(el => el.map(({ pattern }) => pattern)).join('\n')
         return {
             s: s,
