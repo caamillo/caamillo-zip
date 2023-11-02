@@ -31,51 +31,6 @@ const zip = (s, start=3, end=0) => {
         if (typeof s != 'string') throw new ParseError('Parsing illegal value')
         s = sanitizeDecoded(s)
         let m = []
-        /*
-        const records = {}
-        const m = []
-        console.log('Creating first map...')
-        for (let modifier = s.length - (end + 2); modifier >= start; modifier--) {
-            const map = {}
-            chunkLoop:
-            for (let chunk = 0; chunk < s.length - modifier; chunk++) {
-                let chunkArr = []
-                for (let chunkIdx = 0; chunkIdx < modifier + 1; chunkIdx++) {
-                    chunkArr.push(s[chunk + chunkIdx])
-                }
-                chunkArr = chunkArr.join('')
-                for (let _ of Object.keys(map)) {
-                    if (_ === chunkArr) {
-                        map[_] += 1
-                        continue chunkLoop
-                    }
-                }
-                map[chunkArr] = 1
-            }
-            for (let key of Object.keys(map)) {
-                if (map[key] > 1) records[key] = map[key]
-            }            
-        }
-        console.log('Sorting map...')
-        const sorted = Object.fromEntries(
-            Object.entries(records).sort(([,a],[,b]) => b-a)
-        )
-        console.log('Zipping string...')
-        for (let keyIdx in Object.keys(sorted)) {
-            const key = Object.keys(sorted)[keyIdx]
-            // console.log(key)
-            if (s.indexOf(key) >= 0) {
-                if (!m.length || m[m.length - 1].length >= 10) m.push([ sanitizeMap(key) ])
-                else m[m.length - 1].push(sanitizeMap(key))
-                s = s.replaceAll(key, m[m.length - 1].length - 1)
-            }
-        }
-        console.log('Done!')
-        return {
-            s: s,
-            m: m.map(el => el.join(',')).join('\n'),
-            raw: [ s, m.map(el => el.join(',')).join('\n') ].join('\\\n')
-        }*/
         let idx = 0
         const resetFound = () => {
             return {
@@ -119,7 +74,6 @@ const zip = (s, start=3, end=0) => {
         process.stdout.write("Ok!\nSorting by weight... ")
         // First Step
         const sortedByWeight = saved.sort((a, b) => b.weight - a.weight)
-        // console.log(sortedByWeight)
         let tempString = s
         for (let save of sortedByWeight) {
             if (tempString.indexOf(save.pattern) >= 0) {
@@ -146,9 +100,9 @@ const zip = (s, start=3, end=0) => {
             return saved
         })).flat()
         const chunkerized = chunkerize(sortedByOrder)
-        // weights = ALL chunkerized[chunk][saves] WEIGHTS
         let expectedDiff = 0
         let added = 0
+        let newline = false
         for (let chunk in chunkerized) {
             chunk = parseInt(chunk)
             for (let saves in chunkerized[chunk]) {
@@ -156,19 +110,27 @@ const zip = (s, start=3, end=0) => {
                 const savesArr = chunkerized[chunk][saves]
                 const weights = savesArr.reduce((a, { pattern }) => a + pattern.length, 0)
                 let unweight = savesArr[0].pattern.length + 1 // idx (climber API) + word length + "," or "\n" used in map
+                // console.log(chunk, saves, savesArr, added, s.split(/(?<!\\)(?<!\\\\)\n/))
                 let temp = s.split(/(?<!\\)(?<!\\\\)\n/).map((row, nrow) => {
-                    const idx = `${ nrow !== chunk ? `${ chunk }:` : '' }${ saves }`
+                    const idx = nrow !== chunk ? `\\${ chunk }:${ saves }\\` : '' + saves
                     unweight += idx.length
                     return row.replaceAll(savesArr[0].pattern, () => {
-                        if (added < 10) return idx
-                        return `${ idx }\n`
+                        if (newline) {
+                            newline = false
+                            return `${ idx }\n`
+                        }
+                        return idx
                     })
                 }).join('\n')
                 // console.log('pattern:', savesArr[0].pattern, 'w:', weights, 'uw:', unweight)
                 if (weights > unweight) {
                     s = temp
                     expectedDiff += weights - unweight
-                    added += 1
+                    if (added < 9) added += 1
+                    else {
+                        newline = true
+                        added = 0
+                    }
                 } else {
                     m = m.map(saves => saves.filter(({ pattern }) => pattern != savesArr[0].pattern))
                     m = m.filter(saves => saves.length > 0)
@@ -176,7 +138,7 @@ const zip = (s, start=3, end=0) => {
                 if (saves === 9) {
                     let temp = s.split(/(?<!\\)(?<!\\\\)\n/)
                     if (temp.length > 1) {
-                        temp[temp.length - 1] = temp[temp.length - 1].replaceAll(/(?<!\\)[0-9]/g, el => `${ chunk }:${ el }`)
+                        temp[temp.length - 1] = temp[temp.length - 1].replaceAll(/(?<!\\)[0-9]/g, el => `\\${ chunk }:${ el }\\`)
                         s = temp.join('\n')
                     }
                 }

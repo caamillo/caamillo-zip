@@ -1,7 +1,7 @@
 const { unzip, zip } = require('../main.js')
 const fs = require('fs')
 
-const runExample = (path, start=5, json=false) => {
+const runZipExample = (path, start=5, json=false) => {
     let example = fs.readFileSync(path, 'utf-8')
     if (json) example = JSON.stringify(JSON.parse(example)) // Minify JSON
     return [example, zip(example, start)]
@@ -9,12 +9,11 @@ const runExample = (path, start=5, json=false) => {
 
 // Example Zip
 
-const [ example, zipped ] = runExample('./examples/unzipped/test.json', 7, true)
+const [ example, zipped ] = runZipExample('./examples/unzipped/test2.json', 10, true)
 
 console.log('Zipped length:', zipped.raw.length)
 console.log('Example length:', example.length)
 console.log(zipped.raw)
-
 
 /*
 // Example Unzip

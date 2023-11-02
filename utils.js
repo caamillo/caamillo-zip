@@ -8,7 +8,7 @@ const unsanitizeMap = (s) =>
     s.replaceAll('\\,', ',')
 
 const sanitizeDecoded = (s) =>
-    s.replaceAll(/\\/g, '\\\\')
+    s.replaceAll('\n', '\\n').replaceAll(/\\/g, '\\\\')
 
 const unsanitizeDecoded = (s) =>
     s.replaceAll(/\\[1-9]/g, el => el.replace('\\', ''))
