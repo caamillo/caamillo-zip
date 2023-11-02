@@ -1,7 +1,7 @@
 const {
-    replaceAt,sanitizeDecoded,
-    unsanitize, isNumber, removeSpan,
-    spliceString, chunkerize
+    sanitize, unsanitize,
+    sanitizemap, unsanitizemap,
+    removespan, chunkerize
 } = require('./utils')
 const { ParseError } = require('./types')
 
@@ -12,10 +12,10 @@ const { ParseError } = require('./types')
  */
 const parse = (raw) => {
     if (typeof raw != 'string') throw new ParseError('Parsing illegal value')
-    let [ s, m ] = raw.split('\\\n').map(el => el.split('\n')) // [ zipped, map ]
-    // if (s.length < 2) throw new ParseError('Map not found')
+    const parsed = raw.split('\\\n')
+    const [ s, m ] = [ parsed.slice(0, -1), parsed.splice(-1) ].map(el => el.flat())
     return {
-        s: s,
+        s: s.join('\n'),
         m: m.map(el => el.split(/(?<!\\),/))
     }
 }
@@ -29,7 +29,7 @@ const parse = (raw) => {
 const zip = (s, start=3, end=0) => {
     try {
         if (typeof s != 'string') throw new ParseError('Parsing illegal value')
-        s = sanitizeDecoded(s)
+        s = sanitize(s)
         let m = []
         let idx = 0
         const resetFound = () => {
@@ -45,7 +45,7 @@ const zip = (s, start=3, end=0) => {
         while (idx < s.length) {
             const char = s[idx]
             if (!found.value) {
-                if (removeSpan(s, idx, idx + 1).indexOf(char) >= 0) {
+                if (removespan(s, idx, idx + 1).indexOf(char) >= 0) {
                     found.value = true
                     found.start = idx
                     found.occurrence += char
@@ -53,7 +53,7 @@ const zip = (s, start=3, end=0) => {
                 idx += 1
                 continue
             }
-            if (removeSpan(s, found.start, found.start + found.occurrence.length + 1).indexOf(found.occurrence + char) >= 0 && idx < s.length - 1) {
+            if (removespan(s, found.start, found.start + found.occurrence.length + 1).indexOf(found.occurrence + char) >= 0 && idx < s.length - 1) {
                 if (!found.value) {
                     found.value = true
                     found.start = idx
@@ -145,7 +145,7 @@ const zip = (s, start=3, end=0) => {
             }
         }
         process.stdout.write(`Ok!\nDone! Expected diff: ~ ${ expectedDiff }\n`)
-        m = m.map(el => el.map(({ pattern }) => pattern)).join('\n')
+        m = m.map(el => el.map(({ pattern }) => sanitizemap(pattern))).join('\n')
         return {
             s: s,
             m: m,
@@ -161,43 +161,27 @@ const zip = (s, start=3, end=0) => {
  * @param {string} map-to-use (default blank)
  * @returns {string} unzipped string
  */
-const unzip = (s, m='', raw=false) => {
+const unzip = (s='', m='', raw=false) => {
     try {
         if (raw) {
             const parsed = parse(s)
             s = parsed.s
             m = parsed.m
         }
-        const parsed = [ ...s ]
-        // console.log(parsed)
-        for (let row in s) {
-            let modifier = 0
-            let escaping = false
-            for (let idx in s[row].split('')) {
-                idx = parseInt(idx)
-                const char = s[row][idx]
-                if (isNumber(char) && !escaping) {
-                    if (idx > 0) {
-                        if (s[row][idx - 1] === '\\') {
-                            escaping = true
-                            continue
-                        }
-                    }
-                    const val = m[row][parseInt(char)]
-                    parsed[row] = replaceAt(parsed[row], modifier + idx, val)
-                    modifier += val.length - 1
-                } else if (isNaN(char) && escaping) escaping = false
-            }
-        }
-        return unsanitize(parsed.join('\n'))
-        // console.log(s)
+        s = s.replaceAll(/\\(\d+:[0-9])\\/g, el => {
+            const [ row, col ] = el.split(':').map(el => parseInt(el.replace('\\', '')))
+            return unsanitizemap(m[row][col])
+        })
+        s = s.replaceAll(/(?<!\\)[0-9]/g, el => {
+            return unsanitizemap(m[0][parseInt(el)])
+        })
+        return unsanitize(s)
     } catch (err) {
         console.error(err)
     }
 }
 
 module.exports = {
-    zip,
-    unzip,
+    zip, unzip,
     parse
 }
