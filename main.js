@@ -1,5 +1,5 @@
 const {
-    sanitize, unsanitize,
+    sanitize, unsanitize, lastsanitize,
     sanitizemap, unsanitizemap,
     removespan, chunkerize
 } = require('./utils')
@@ -12,11 +12,11 @@ const { ParseError } = require('./types')
  */
 const parse = (raw) => {
     if (typeof raw != 'string') throw new ParseError('Parsing illegal value')
-    const parsed = raw.split('\\\n')
-    const [ s, m ] = [ parsed.slice(0, -1), parsed.splice(-1) ].map(el => el.flat())
+    const parsed = raw.split(/(.*(?<!\\)\\\n)/gs)
+    const [ s, m ] = [ parsed.slice(0, -1), parsed.splice(-1) ]
     return {
-        s: s.join('\n'),
-        m: m.map(el => el.split(/(?<!\\),/))
+        s: s.filter(el => el.length > 0 ).join('\n'),
+        m: m[0].split('\n').map(el => el.split(/(?<!\\),/))
     }
 }
 
@@ -61,8 +61,8 @@ const zip = (s, start=3, end=0) => {
                 found.occurrence += char
             } else if (found.value) {
                 if (found.occurrence.length >= start && !saved.filter(el => el.pattern === found.occurrence).length) saved.push({
-                    pattern: found.occurrence,
-                    weight: found.occurrence.length * (s.split(found.occurrence).length - 1),
+                    pattern: found.occurrence.slice(-1) === '\\' ? found.occurrence.slice(0, -1) : found.occurrence,
+                    weight: (found.occurrence.slice(-1) === '\\' ? found.occurrence.length - 1 : found.occurrence.length) * (s.split(found.occurrence).length - 1),
                     start: found.start
                 })
                 idx = found.start
@@ -168,12 +168,13 @@ const unzip = (s='', m='', raw=false) => {
         }
         s = s.replaceAll(/\\(\d+:[0-9])\\/g, el => {
             const [ row, col ] = el.split(':').map(el => parseInt(el.replace('\\', '')))
+            // console.log(row, col, unsanitizemap(m[row][col]))
             return unsanitizemap(m[row][col])
         })
         s = s.replaceAll(/(?<!\\)[0-9]/g, el => {
             return unsanitizemap(m[0][parseInt(el)])
         })
-        return unsanitize(s)
+        return unsanitize(s.replaceAll('\n', '')).slice(0, -1)
     } catch (err) {
         console.error(err)
     }
