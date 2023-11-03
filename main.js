@@ -26,7 +26,7 @@ const parse = (raw) => {
  * @returns {string} map values
  * @returns {string} raw string (zip, map)
  */
-const zip = (s, start=3, end=0) => {
+const zip = (s, start=3, max=2) => {
     try {
         if (typeof s != 'string') throw new ParseError('Parsing illegal value')
         s = sanitize(s)
@@ -53,7 +53,7 @@ const zip = (s, start=3, end=0) => {
                 idx += 1
                 continue
             }
-            if (removespan(s, found.start, found.start + found.occurrence.length + 1).indexOf(found.occurrence + char) >= 0 && idx < s.length - 1) {
+            if (removespan(s, found.start, found.start + found.occurrence.length + 1).indexOf(found.occurrence + char) >= 0 && idx < s.length - 1 && found.occurrence.length < s.length / max) {
                 if (!found.value) {
                     found.value = true
                     found.start = idx
