@@ -1,5 +1,5 @@
 const {
-    sanitize, unsanitize, lastsanitize,
+    sanitize, unsanitize,
     sanitizemap, unsanitizemap,
     removespan, chunkerize
 } = require('./utils')
